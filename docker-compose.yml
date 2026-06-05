@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      AWS_REGION: "us-east-1"
+      S3_BUCKET_NAME: "your-s3-bucket"
+      DYNAMODB_TABLE_NAME: "documents-table"
+      AUDIT_TABLE_NAME: "audit-table"
+      BEDROCK_MODEL_ID: "anthropic.claude-3-sonnet-20240229-v1:0"
+      JWT_SECRET: "unused"
+      JWT_EXPIRATION: "3600"
+      LOG_LEVEL: "INFO"
+      COGNITO_USERNAME_HEADER: "x-cognito-username"
+      COGNITO_ROLE_HEADER: "x-cognito-role"

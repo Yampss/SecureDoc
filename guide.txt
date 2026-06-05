@@ -1,0 +1,157 @@
+Secure Document Intelligence Platform - Step-by-Step Bringup
+
+1) Architecture Summary
+- This is a monolithic application: one FastAPI service that integrates with AWS managed services.
+- Authentication and RBAC are enforced in API Gateway (Cognito User Pools authorizer).
+- The app trusts headers injected by API Gateway and logs audit events.
+
+2) AWS Resources You Must Have (pre-created)
+- S3 bucket for document storage.
+- DynamoDB documents table:
+  - Partition key: document_id (string)
+- DynamoDB audit table:
+  - Partition key: audit_id (string)
+- Cognito User Pool (with users/groups or custom attributes for role).
+- API Gateway (HTTP API or REST API) with Cognito User Pools authorizer.
+- Bedrock model access enabled in your AWS account.
+
+3) IAM Permissions for the App
+Attach these permissions to the EC2 instance role or the credentials you run with:
+- S3: s3:GetObject, s3:PutObject, s3:DeleteObject on your bucket
+- DynamoDB: dynamodb:GetItem, PutItem, UpdateItem, DeleteItem, Scan on both tables
+- Textract: textract:DetectDocumentText, StartDocumentTextDetection, GetDocumentTextDetection
+- Bedrock: bedrock:InvokeModel
+
+4) API Gateway Header Mapping (critical)
+Your app expects Cognito identity to be forwarded as headers.
+
+Set these headers in API Gateway integration mapping:
+- X-Cognito-Username -> from cognito:username
+- X-Cognito-Role -> from custom:role (optional)
+
+If you use HTTP API:
+- Use JWT authorizer claims mapping to add headers.
+If you use REST API:
+- Use integration request mapping template to set headers.
+
+5) Environment Variables (where to set them)
+Required variables:
+- AWS_REGION
+- S3_BUCKET_NAME
+- DYNAMODB_TABLE_NAME
+- AUDIT_TABLE_NAME
+- BEDROCK_MODEL_ID
+- JWT_SECRET (unused in this build)
+- JWT_EXPIRATION (unused in this build)
+- COGNITO_USERNAME_HEADER (default: x-cognito-username)
+- COGNITO_ROLE_HEADER (default: x-cognito-role)
+
+Where to set them:
+A) Local run (PowerShell):
+   $env:AWS_REGION = "us-east-1"
+   $env:S3_BUCKET_NAME = "your-s3-bucket"
+   $env:DYNAMODB_TABLE_NAME = "documents-table"
+   $env:AUDIT_TABLE_NAME = "audit-table"
+   $env:BEDROCK_MODEL_ID = "anthropic.claude-3-sonnet-20240229-v1:0"
+   $env:JWT_SECRET = "unused"
+   $env:JWT_EXPIRATION = "3600"
+   $env:COGNITO_USERNAME_HEADER = "x-cognito-username"
+   $env:COGNITO_ROLE_HEADER = "x-cognito-role"
+
+B) Local run (bash):
+   export AWS_REGION=us-east-1
+   export S3_BUCKET_NAME=your-s3-bucket
+   export DYNAMODB_TABLE_NAME=documents-table
+   export AUDIT_TABLE_NAME=audit-table
+   export BEDROCK_MODEL_ID=anthropic.claude-3-sonnet-20240229-v1:0
+   export JWT_SECRET=unused
+   export JWT_EXPIRATION=3600
+   export COGNITO_USERNAME_HEADER=x-cognito-username
+   export COGNITO_ROLE_HEADER=x-cognito-role
+
+C) Docker run:
+   docker run --rm -p 8000:8000 \
+     -e AWS_REGION=us-east-1 \
+     -e S3_BUCKET_NAME=your-s3-bucket \
+     -e DYNAMODB_TABLE_NAME=documents-table \
+     -e AUDIT_TABLE_NAME=audit-table \
+     -e BEDROCK_MODEL_ID=anthropic.claude-3-sonnet-20240229-v1:0 \
+     -e JWT_SECRET=unused \
+     -e JWT_EXPIRATION=3600 \
+     -e COGNITO_USERNAME_HEADER=x-cognito-username \
+     -e COGNITO_ROLE_HEADER=x-cognito-role \
+     secure-docs-api
+
+D) EC2 systemd (recommended for production):
+Create /etc/systemd/system/secure-docs-api.service with:
+
+[Unit]
+Description=Secure Docs API
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/opt/securefile
+Environment=AWS_REGION=us-east-1
+Environment=S3_BUCKET_NAME=your-s3-bucket
+Environment=DYNAMODB_TABLE_NAME=documents-table
+Environment=AUDIT_TABLE_NAME=audit-table
+Environment=BEDROCK_MODEL_ID=anthropic.claude-3-sonnet-20240229-v1:0
+Environment=JWT_SECRET=unused
+Environment=JWT_EXPIRATION=3600
+Environment=COGNITO_USERNAME_HEADER=x-cognito-username
+Environment=COGNITO_ROLE_HEADER=x-cognito-role
+ExecStart=/opt/securefile/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+Then run:
+- sudo systemctl daemon-reload
+- sudo systemctl enable secure-docs-api
+- sudo systemctl start secure-docs-api
+- sudo systemctl status secure-docs-api
+
+6) Local Run Steps
+A) Linux/macOS
+1) python -m venv .venv
+2) . .venv/bin/activate
+3) pip install -r requirements.txt
+4) uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+B) Windows PowerShell
+1) python -m venv .venv
+2) .\.venv\Scripts\Activate.ps1
+3) pip install -r requirements.txt
+4) uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+7) Docker Run Steps
+1) docker build -t secure-docs-api .
+2) docker run --rm -p 8000:8000 (with env vars as above)
+
+8) API Gateway Integration Steps (high-level)
+1) Configure API Gateway to route all /documents/* and /auth/* paths to the EC2 service.
+2) Enable Cognito User Pools authorizer on those routes.
+3) Map Cognito claims to headers:
+   - X-Cognito-Username from cognito:username
+   - X-Cognito-Role from custom:role (optional)
+4) Test the route with an authenticated token to confirm headers are injected.
+
+9) First-Time Validation Flow
+1) Authenticate using Cognito and call POST /auth/login (for audit log).
+2) POST /documents/upload with a PDF/PNG/JPG/JPEG file.
+3) Poll GET /documents/{id} until status becomes READY.
+4) POST /documents/{id}/chat with a question.
+5) GET /documents/search?q=keyword to verify search results.
+
+10) Common Issues
+- 401 Unauthorized: API Gateway is not forwarding X-Cognito-Username header.
+- 400 Unsupported file type: only PDF/PNG/JPG/JPEG are allowed.
+- Textract failures: check IAM permissions and file format.
+- Bedrock failures: confirm model access and model ID.
+
+11) Notes
+- Background processing runs in-process via FastAPI BackgroundTasks; for higher volume, move to a queue worker.
+- Bedrock payload is configured for Anthropic Claude models in app/services/bedrock_service.py.
