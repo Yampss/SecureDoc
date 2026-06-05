@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secure Document Intelligence Platform</title>
+    <style>
+      :root {
+        --bg: #0b0f14;
+        --panel: #141a21;
+        --ink: #e6edf3;
+        --muted: #9fb0c0;
+        --accent: #46d1a7;
+        --accent-2: #4aa3ff;
+        --danger: #ff6b6b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        background: radial-gradient(circle at 10% 10%, #1d2833 0%, #0b0f14 40%, #07090c 100%);
+        color: var(--ink);
+      }
+
+      header {
+        padding: 32px 24px 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 24px;
+        letter-spacing: 0.4px;
+      }
+
+      header p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      main {
+        padding: 24px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+      }
+
+      .card h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+
+      label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      input,
+      textarea,
+      button {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #0f141b;
+        color: var(--ink);
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+
+      textarea {
+        min-height: 90px;
+        resize: vertical;
+      }
+
+      button {
+        margin-top: 10px;
+        background: linear-gradient(120deg, var(--accent), #2bb6ff);
+        color: #0b0f14;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(70, 209, 167, 0.25);
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+      }
+
+      .status {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.04);
+        font-size: 13px;
+        color: var(--muted);
+        white-space: pre-wrap;
+      }
+
+      .pill {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(74, 163, 255, 0.2);
+        color: var(--accent-2);
+        font-size: 11px;
+        margin-bottom: 10px;
+      }
+
+      .error {
+        color: var(--danger);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Secure Document Intelligence Platform</h1>
+        <p>Demo UI for upload, status, chat, and search.</p>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <span class="pill">Auth Headers</span>
+        <div class="row">
+          <div>
+            <label for="username">X-Cognito-Username</label>
+            <input id="username" placeholder="test-user" value="test-user" />
+          </div>
+          <div>
+            <label for="role">X-Cognito-Role (optional)</label>
+            <input id="role" placeholder="USER" value="USER" />
+          </div>
+        </div>
+        <label for="baseUrl">API Base URL</label>
+        <input id="baseUrl" placeholder="http://localhost:8000" />
+        <div class="status" id="authStatus">Headers will be sent with every request.</div>
+      </section>
+
+      <section class="card">
+        <span class="pill">Upload</span>
+        <h2>Upload Document</h2>
+        <label for="fileInput">Select PDF/PNG/JPG/JPEG</label>
+        <input id="fileInput" type="file" />
+        <button id="uploadBtn">Upload</button>
+        <div class="status" id="uploadStatus">No upload yet.</div>
+      </section>
+
+      <section class="card">
+        <span class="pill">Status</span>
+        <h2>Check Processing Status</h2>
+        <label for="docId">Document ID</label>
+        <input id="docId" placeholder="paste document_id" />
+        <button id="statusBtn">Fetch Status</button>
+        <div class="status" id="statusOutput">Waiting...</div>
+      </section>
+
+      <section class="card">
+        <span class="pill">Chat</span>
+        <h2>Ask a Question</h2>
+        <label for="chatDocId">Document ID</label>
+        <input id="chatDocId" placeholder="paste document_id" />
+        <label for="question">Question</label>
+        <textarea id="question" placeholder="What is this document about?"></textarea>
+        <button id="chatBtn">Ask</button>
+        <div class="status" id="chatOutput">Waiting...</div>
+      </section>
+
+      <section class="card">
+        <span class="pill">Search</span>
+        <h2>Search Documents</h2>
+        <label for="searchQuery">Query</label>
+        <input id="searchQuery" placeholder="invoice" />
+        <button id="searchBtn">Search</button>
+        <div class="status" id="searchOutput">Waiting...</div>
+      </section>
+    </main>
+
+    <script>
+      const baseUrlInput = document.getElementById("baseUrl");
+      baseUrlInput.value = window.location.origin;
+
+      function getHeaders() {
+        const username = document.getElementById("username").value.trim();
+        const role = document.getElementById("role").value.trim();
+        const headers = {};
+        if (username) {
+          headers["X-Cognito-Username"] = username;
+        }
+        if (role) {
+          headers["X-Cognito-Role"] = role;
+        }
+        return headers;
+      }
+
+      function apiUrl(path) {
+        const base = baseUrlInput.value.trim().replace(/\/$/, "");
+        return `${base}${path}`;
+      }
+
+      function setStatus(elementId, message, isError = false) {
+        const el = document.getElementById(elementId);
+        el.textContent = message;
+        el.classList.toggle("error", isError);
+      }
+
+      document.getElementById("uploadBtn").addEventListener("click", async () => {
+        const fileInput = document.getElementById("fileInput");
+        if (!fileInput.files.length) {
+          setStatus("uploadStatus", "Please select a file.", true);
+          return;
+        }
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        setStatus("uploadStatus", "Uploading...");
+        try {
+          const response = await fetch(apiUrl("/documents/upload"), {
+            method: "POST",
+            headers: getHeaders(),
+            body: formData,
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            setStatus("uploadStatus", JSON.stringify(data, null, 2), true);
+            return;
+          }
+          document.getElementById("docId").value = data.document_id;
+          document.getElementById("chatDocId").value = data.document_id;
+          setStatus("uploadStatus", JSON.stringify(data, null, 2));
+        } catch (error) {
+          setStatus("uploadStatus", error.toString(), true);
+        }
+      });
+
+      document.getElementById("statusBtn").addEventListener("click", async () => {
+        const docId = document.getElementById("docId").value.trim();
+        if (!docId) {
+          setStatus("statusOutput", "Please enter a document ID.", true);
+          return;
+        }
+        setStatus("statusOutput", "Fetching...");
+        try {
+          const response = await fetch(apiUrl(`/documents/${docId}`), {
+            headers: getHeaders(),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            setStatus("statusOutput", JSON.stringify(data, null, 2), true);
+            return;
+          }
+          setStatus("statusOutput", JSON.stringify(data, null, 2));
+        } catch (error) {
+          setStatus("statusOutput", error.toString(), true);
+        }
+      });
+
+      document.getElementById("chatBtn").addEventListener("click", async () => {
+        const docId = document.getElementById("chatDocId").value.trim();
+        const question = document.getElementById("question").value.trim();
+        if (!docId || !question) {
+          setStatus("chatOutput", "Provide document ID and question.", true);
+          return;
+        }
+        setStatus("chatOutput", "Thinking...");
+        try {
+          const response = await fetch(apiUrl(`/documents/${docId}/chat`), {
+            method: "POST",
+            headers: { ...getHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({ question }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            setStatus("chatOutput", JSON.stringify(data, null, 2), true);
+            return;
+          }
+          setStatus("chatOutput", JSON.stringify(data, null, 2));
+        } catch (error) {
+          setStatus("chatOutput", error.toString(), true);
+        }
+      });
+
+      document.getElementById("searchBtn").addEventListener("click", async () => {
+        const query = document.getElementById("searchQuery").value.trim();
+        if (!query) {
+          setStatus("searchOutput", "Enter a search query.", true);
+          return;
+        }
+        setStatus("searchOutput", "Searching...");
+        try {
+          const response = await fetch(apiUrl(`/documents/search?q=${encodeURIComponent(query)}`), {
+            headers: getHeaders(),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            setStatus("searchOutput", JSON.stringify(data, null, 2), true);
+            return;
+          }
+          setStatus("searchOutput", JSON.stringify(data, null, 2));
+        } catch (error) {
+          setStatus("searchOutput", error.toString(), true);
+        }
+      });
+    </script>
+  </body>
+</html>

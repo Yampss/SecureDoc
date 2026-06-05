@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
 from app.config.logging import setup_logging
@@ -15,6 +17,12 @@ def create_app() -> FastAPI:
         version=settings.app_version,
         description=settings.app_description,
     )
+
+    app.mount("/ui", StaticFiles(directory="app/static", html=True), name="ui")
+
+    @app.get("/", include_in_schema=False)
+    async def root_redirect() -> RedirectResponse:
+        return RedirectResponse(url="/ui")
 
     register_exception_handlers(app)
     app.include_router(api_router)
