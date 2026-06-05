@@ -7,6 +7,6 @@ from app.api.search import router as search_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
+api_router.include_router(search_router, prefix="/documents", tags=["search"])
 api_router.include_router(documents_router, prefix="/documents", tags=["documents"])
 api_router.include_router(chat_router, prefix="/documents", tags=["chat"])
-api_router.include_router(search_router, prefix="/documents", tags=["search"])

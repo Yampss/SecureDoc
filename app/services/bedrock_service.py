@@ -17,14 +17,23 @@ class BedrockService:
         return self._invoke_model(prompt, max_tokens=300)
 
     def _invoke_model(self, prompt: str, max_tokens: int) -> str:
-        body = {
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": max_tokens,
-            "temperature": 0,
-            "messages": [
-                {"role": "user", "content": [{"type": "text", "text": prompt}]}
-            ],
-        }
+        if self._model_id.startswith("amazon.nova"):
+            body = {
+                "messages": [{"role": "user", "content": [{"text": prompt}]}],
+                "inferenceConfig": {
+                    "maxTokens": max_tokens,
+                    "temperature": 0,
+                },
+            }
+        else:
+            body = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": max_tokens,
+                "temperature": 0,
+                "messages": [
+                    {"role": "user", "content": [{"type": "text", "text": prompt}]}
+                ],
+            }
 
         response = self._client.invoke_model(
             modelId=self._model_id,
@@ -33,6 +42,12 @@ class BedrockService:
             accept="application/json",
         )
         payload = json.loads(response["body"].read().decode("utf-8"))
+
+        if "output" in payload:
+            content = payload.get("output", {}).get("message", {}).get("content", [])
+            if content and isinstance(content, list):
+                return content[0].get("text", "")
+
         content = payload.get("content", [])
         if content and isinstance(content, list):
             return content[0].get("text", "")
