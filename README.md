@@ -2,7 +2,6 @@
 
 This repository contains a FastAPI-based backend showcasing secure document ingestion, automated text extraction (OCR), LLM summarization and question-answering, and audit logging — all integrated with AWS managed services. The project is designed to run on EC2 or in containers and to be placed behind API Gateway with Cognito in production.
 
-This README focuses on the AWS concepts used, how services are connected, security considerations (SSE‑KMS, IAM), and practical run/deploy steps.
 
 ---
 
@@ -158,14 +157,3 @@ docker run --rm -p 8000:8000 \
 - `app/auth/dependencies.py` — demo header-based identity extraction.
 - `app/static/index.html` — demo UI available at `/ui`.
 
-## Security recommendations (production checklist)
-
-1. Place API Gateway (with Cognito User Pool authorizer) in front of the service and map claims to headers; avoid exposing the app directly.
-2. Use SSE‑KMS with a customer-managed CMK for S3 and restrict KMS usage to the service role.
-3. Use private networking (VPC, security groups), and restrict inbound traffic to the ALB/API Gateway.
-4. Move background processing to a durable queue (SQS + worker) for reliability and retry semantics.
-5. Replace DynamoDB scan-based search with a vector search (OpenSearch k-NN, Pinecone, or FAISS) and implement chunking + embeddings for RAG.
-
----
-
-If you’d like, I can add a `DEPLOY.md` with CLI steps and example CloudFormation snippets to provision the S3 bucket (SSE‑KMS), DynamoDB tables, Cognito User Pool, and API Gateway mappings. Let me know which provider/approach you prefer (Console, AWS CLI, CloudFormation/TF/ CDK).
