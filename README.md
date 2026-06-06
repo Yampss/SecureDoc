@@ -21,7 +21,10 @@ Core runtime flow:
 4. Chat requests (`POST /documents/{id}/chat`) load the extracted text, build a strict prompt that forbids hallucination, and call Bedrock to answer questions using the document content.
 5. Audit events (upload, search, chat, delete, login) are written to an `audit` DynamoDB table.
 
----
+---# 
+# Application 
+![Demo](app/static/image.png)
+
 
 ## AWS Integration & Security Details
 
